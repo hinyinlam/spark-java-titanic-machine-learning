@@ -1,6 +1,7 @@
 package titanic.io.demo;
 
 import lombok.Data;
+import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.ml.classification.RandomForestClassificationModel;
 import org.apache.spark.ml.classification.RandomForestClassifier;
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator;
@@ -15,6 +16,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.count;
@@ -28,16 +30,20 @@ public class DemoApplication {
         //it's just the ecosystem of Spring allows us to further develop other application functions
     }
 
+    @Profile("!test")
     @Bean
-    public static CommandLineRunner runme() {
+    public CommandLineRunner runme() {
         return args -> {
-            DemoApplication app = new DemoApplication();
-            app.runSparkML();
+            runSparkML();
         };
     }
 
     public void runSparkML(){
-        SparkSession ss = SparkSession.builder().appName("TitanicSurvive").config("spark.eventLog.enabled", "false").master("local[1]").getOrCreate();
+        SparkSession ss = SparkSession.builder()
+                .appName("TitanicSurvive")
+                .config("spark.eventLog.enabled", "false")
+                .master("local[1]")
+                .getOrCreate();
         ss.sparkContext().setLogLevel("ERROR");
         Dataset<Row> rows = ss.read().option("header", true).csv("train.csv");
 
@@ -52,7 +58,8 @@ public class DemoApplication {
                 col("Embarked")
         );
 
-        //Rows now has the right type to be typed
+        System.out.println("Dataframe:");
+        rows.show();
         System.out.println("Scheme:");
         rows.printSchema();
 
